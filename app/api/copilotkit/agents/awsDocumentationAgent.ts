@@ -1,5 +1,5 @@
 // Remove getMcpClient import, it's now used by the service
-// import { getMcpClient } from '../utils/mcpClientManager';
+
 // Import the new service
 import { callMcpTool } from '../utils/mcpInteractionService';
 // Import the shared CopilotAction interface

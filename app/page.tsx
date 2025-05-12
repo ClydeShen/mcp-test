@@ -32,13 +32,26 @@ const INSTRUCTIONS =
 export default function Home() {
   const theme = useTheme();
 
+  // Updated example prompts based on AWS, PowerPoint, and Word tools
   const examplePrompts = [
-    "Search the AWS docs for 'EC2 instance types'",
-    'Can you read the intro section from the S3 developer guide?',
-    'Recommend some documentation about AWS security best practices.',
-    "Open the presentation './data/pptx/test.pptx'",
-    "Create a new presentation and add a title slide saying 'Hello World'",
-    // Add more examples if needed
+    // AWS Docs Examples
+    'Search AWS docs for Lambda execution environments.',
+    'Can you find documentation on S3 bucket policies? Limit to 5 results.',
+    'Read the documentation page at https://docs.aws.amazon.com/vpc/latest/userguide/what-is-amazon-vpc.html',
+    // PowerPoint Examples
+    'Create a new PowerPoint presentation.',
+    // (Requires presentation ID from create/open)
+    "Add a new slide (layout 1) with the title 'Introduction' to the current presentation.",
+    "Save the current presentation as './output/my_new_presentation.pptx'.",
+    // Word Examples (Expanded)
+    "Create a new Word document named 'report.docx' with author 'AI Assistant'.",
+    "Add a level 1 heading 'Q3 Summary' to 'report.docx'.",
+    "Add a paragraph 'Sales increased by 15% compared to Q2.' to 'report.docx'.",
+    "Add a 2x2 table to 'report.docx' with data [['Region', 'Sales'], ['North', '10000']].",
+    "Format the text '15%' in the first paragraph of 'report.docx' to be bold.",
+    "Search for the text 'Sales' in 'report.docx'.",
+    "Get the full text content of 'report.docx'.",
+    "Convert 'report.docx' to PDF.",
   ];
 
   return (

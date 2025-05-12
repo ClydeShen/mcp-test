@@ -81,6 +81,11 @@ const model = new BedrockChat({
 // --- LangChain Adapter Setup ---
 const serviceAdapter = new LangChainAdapter({
   chainFn: async ({ messages, tools }) => {
+    // Log the messages array to inspect its structure before sending to Bedrock
+    // console.log("--- Messages sent to LangChain/Bedrock ---");
+    // console.dir(messages, { depth: null }); // Log the full structure
+    // console.log("-----------------------------------------");
+
     return model.bindTools(tools).stream(messages);
   },
 });

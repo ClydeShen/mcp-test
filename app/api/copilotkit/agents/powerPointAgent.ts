@@ -1,15 +1,9 @@
-'use strict';
-// Currently disabled: The underlying agent's get_slide_info tool
-// does not return text content needed for extraction.
-// Keep this commented code as a reference for future implementation
-// when the agent is updated or replaced.
-
 // Import the new service
 import { callMcpTool } from '../utils/mcpInteractionService';
 // Import the CopilotAction interface (assuming it's exported from the other file)
 // If not exported, we need to define it here or in a shared types file.
 // Assuming export for now:
-// import { type CopilotAction } from './awsDocumentationAgent';
+
 // Import from the centralised types file
 import { type AgentAction } from '../types';
 
@@ -18,7 +12,6 @@ interface SetCorePropertiesArgs {
   presentation_id: string;
   title?: string;
   author?: string;
-  // Add other potential properties here
 }
 
 interface AddSlideArgs {
@@ -126,9 +119,6 @@ interface AddChartArgs {
 }
 
 // Add missing interfaces for handlers
-interface OpenPresentationArgs {
-  file_path: string;
-}
 
 interface SavePresentationArgs {
   presentation_id: string;
@@ -141,8 +131,8 @@ interface GetPresentationInfoArgs {
 
 // --- Define Actions based on README ---
 
-// Use the generic CopilotAction with specific argument types where possible
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// Use the generic AgentAction with specific argument types where possible
+
 const powerPointAgentActions: AgentAction<any>[] = [
   // --- Presentation Tools ---
   {
@@ -153,27 +143,6 @@ const powerPointAgentActions: AgentAction<any>[] = [
     // Refactor handler
     handler: async (): Promise<string> => {
       return callMcpTool('powerpoint', 'create_presentation', {});
-    },
-  },
-  {
-    name: 'PowerPointAgent_open_presentation',
-    description:
-      'Opens an existing PowerPoint (.pptx) file and returns its internal presentation ID and slide count.',
-    parameters: [
-      {
-        name: 'file_path',
-        type: 'string',
-        description:
-          'The path to the .pptx file (e.g., ./data/pptx/test.pptx or test.pptx relative to server).',
-        required: true,
-      },
-    ],
-    // Refactor handler
-    handler: async (args: OpenPresentationArgs): Promise<string> => {
-      return callMcpTool('powerpoint', 'open_presentation', args);
-      // NOTE: If specific extraction of presentation_id is absolutely needed *before* returning
-      // to the CopilotKit runtime, we would need to await, parse, and potentially re-stringify.
-      // But for simplicity, we assume the service response is sufficient for now.
     },
   },
   {
