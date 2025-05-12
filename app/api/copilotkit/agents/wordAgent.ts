@@ -1,4 +1,5 @@
-import { type CopilotAction } from '../types';
+// import { type CopilotAction } from '../types';
+import { type AgentAction } from '../types';
 import { callMcpTool } from '../utils/mcpInteractionService';
 
 // --- TypeScript Interfaces for Handler Arguments (Define as needed) ---
@@ -16,7 +17,7 @@ interface AddHeadingArgs {
 
 // Define more argument interfaces for other tools...
 
-export const wordAgentActions: CopilotAction[] = [
+export const wordAgentActions: AgentAction[] = [
   {
     name: 'WordAgent_create_document',
     description: 'Creates a new Word document with optional title and author.',

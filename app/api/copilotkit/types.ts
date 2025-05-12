@@ -22,7 +22,7 @@ export interface McpConfig {
 
 // Interface for defining actions consumable by CopilotKit
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export interface CopilotAction<TArgs = any> {
+export interface AgentAction<TArgs = any> {
   name: string;
   description: string;
   parameters: {

@@ -3,7 +3,8 @@
 // Import the new service
 import { callMcpTool } from '../utils/mcpInteractionService';
 // Import the shared CopilotAction interface
-import { type CopilotAction } from '../types';
+// import { type CopilotAction } from '../types';
+import { type AgentAction } from '../types';
 
 // Define an interface for the action structure using a generic for handler args
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -30,7 +31,8 @@ import { type CopilotAction } from '../types';
 
 // Define the actions for the AWS Documentation agent using the interface
 // Let TypeScript infer TArgs or explicitly set if needed (defaults to any)
-export const awsDocumentationActions: CopilotAction[] = [
+// export const awsDocumentationActions: CopilotAction[] = [
+export const awsDocumentationActions: AgentAction[] = [
   {
     name: 'AWSDocumentation_read_documentation',
     description:

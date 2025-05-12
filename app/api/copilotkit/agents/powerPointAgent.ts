@@ -11,7 +11,7 @@ import { callMcpTool } from '../utils/mcpInteractionService';
 // Assuming export for now:
 // import { type CopilotAction } from './awsDocumentationAgent';
 // Import from the centralised types file
-import { type CopilotAction } from '../types';
+import { type AgentAction } from '../types';
 
 // --- TypeScript Interfaces for Handler Arguments ---
 interface SetCorePropertiesArgs {
@@ -143,7 +143,7 @@ interface GetPresentationInfoArgs {
 
 // Use the generic CopilotAction with specific argument types where possible
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const powerPointAgentActions: CopilotAction<any>[] = [
+const powerPointAgentActions: AgentAction<any>[] = [
   // --- Presentation Tools ---
   {
     name: 'PowerPointAgent_create_presentation',

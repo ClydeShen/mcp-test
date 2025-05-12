@@ -1,46 +1,29 @@
-# Open MCP Client - Bedrock & Agents PoC
+# MCP Client - Bedrock & Agents PoC
 
-![UI Screenshot](https://github.com/user-attachments/assets/364b6705-14d4-4e6d-bea7-fb9f12664fab)
+This project demonstrates a chat interface powered by AWS Bedrock (Claude 3 Sonnet) that delegates tasks to specialized MCP agents.
 
-This project is a Proof of Concept (PoC) demonstrating a chat interface powered by AWS Bedrock (Claude 3 Sonnet) that can delegate tasks to specialized backend agents using the Model Context Protocol (MCP).
+**Integrated Agents:**
 
-Currently, it integrates two MCP agents:
-
-1.  **AWS Documentation Agent:** Allows searching, reading, and getting recommendations for AWS documentation.
-2.  **PowerPoint Agent:** Allows creating, opening, modifying (adding slides, text, shapes, charts), and saving PowerPoint (.pptx) files. (Note: Does _not_ currently extract existing text content).
+- **AWS Documentation Agent:** Search, read, and get recommendations for AWS docs.
+- **PowerPoint Agent:** Create, open, modify, and save PowerPoint (.pptx) files.
+- **Word Agent:** Create, read, and manipulate Microsoft Word documents.
 
 ## Architecture
 
-- `/app`: Next.js application
-  - Frontend: Chat UI built with `@copilotkit/react-ui` and MUI.
-  - Backend API (`/app/api/copilotkit/route.ts`):
-    - Orchestrates interaction with AWS Bedrock (Claude 3).
-    - Manages and communicates with MCP agents using `@modelcontextprotocol/sdk`.
-    - Launches Python-based MCP servers via Node.js `child_process`.
-- `/agent`: Contains the Python MCP server implementations.
-  - `office-powerpoint-mcp-server`: Handles PowerPoint operations.
-  - (AWS Documentation agent is installed/run via `uvx` on demand, not stored here).
-- `/data/pptx`: Sample PowerPoint files for testing.
-- `mcp.config.json`: Central configuration file for LLM and MCP server settings.
+- `/app`: Next.js application (Frontend: CopilotKit UI + MUI; Backend API: Orchestrates LLM and MCP agents).
+- `mcp.config.json`: Central configuration for LLM (Bedrock) and MCP server settings.
+- MCP agents are typically run via `uvx` as defined in `mcp.config.json`.
 
 ## Prerequisites
 
-1.  **Node.js:** v18 or later.
-2.  **pnpm:** Package manager for Node.js. Install via `npm install -g pnpm` or other methods (see [pnpm installation](https://pnpm.io/installation)).
-3.  **Python:** 3.10 or higher (for the PowerPoint agent).
-4.  **pip:** Python package installer (usually comes with Python).
-5.  **uv:** Python package installer/resolver (used by `uvx`). Install via `pip install uv` or other methods (see [uv documentation](https://github.com/astral-sh/uv)).
-6.  **AWS Account & Credentials:**
-    - An AWS account with access to Bedrock.
-    - Ensure your AWS credentials (Access Key ID, Secret Access Key) are configured in a way that the AWS SDK for JavaScript v3 can find them. Common methods include:
-      - Environment variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`).
-      - Shared credential file (`~/.aws/credentials`).
-      - IAM role attached to an EC2 instance or ECS task.
-      - **Note:** You can also directly put credentials in `mcp.config.json` (see Configuration section), but this is **not recommended for production or shared environments**.
+- **Node.js:** v18+
+- **pnpm:** Node.js package manager.
+- **uv:** Python package utility (for `uvx`). Install via `pip install uv`.
+- **AWS Account & Credentials:** For Bedrock access. Configure via environment variables, shared credential file, or IAM role (preferred over hardcoding in `mcp.config.json`).
 
 ## Setup
 
-1.  **Clone the Repository:**
+1.  **Clone Repository:**
 
     ```bash
     git clone <repository_url>
@@ -53,187 +36,110 @@ Currently, it integrates two MCP agents:
     pnpm install
     ```
 
-    This installs dependencies for the Next.js app (`/app`).
-
-3.  **Install Python Dependencies for PowerPoint Agent:**
-    The PowerPoint agent has its own dependencies managed via `requirements.txt`.
-
-    ```bash
-    # Ensure you are in the project root directory
-    pip install -r ./agent/office-powerpoint-mcp-server/requirements.txt
-    ```
-
-    _(Alternatively, if you prefer isolated environments, create a virtual environment first: `python -m venv .venv && source .venv/bin/activate` (or `.\venv\Scripts\activate` on Windows) before running `pip install`)_
-
-4.  **Configure `mcp.config.json`:**
-    A template file `mcp.config.example.json` might exist, or you can create `mcp.config.json` at the project root. Populate it with your specific settings:
-
-    ```json
-    {
-      "systemPrompt": "You are a helpful assistant. You have access to tools for searching AWS documentation and manipulating PowerPoint files. Use the tools when appropriate. For PowerPoint tasks, you need to open or create a presentation first to get an ID, then use that ID for subsequent operations like adding slides or saving. For file paths, use relative paths like './data/pptx/test.pptx' or './output/new_file.pptx'.",
-      "llm": {
-        "provider": "bedrock",
-        "model": "anthropic.claude-3-sonnet-20240229-v1:0", // Or your preferred Claude 3 model
-        "region": "YOUR_AWS_REGION", // e.g., "us-east-1"
-        "aws_access_key_id": "YOUR_AWS_ACCESS_KEY_ID", // Optional: Only if not configured elsewhere (NOT RECOMMENDED)
-        "aws_secret_access_key": "YOUR_AWS_SECRET_ACCESS_KEY", // Optional: Only if not configured elsewhere (NOT RECOMMENDED)
-        "temperature": 0.1
-      },
+3.  **Configure `mcp.config.json`:**
+    Create `mcp.config.json` at the project root (can copy from `mcp.config.example.json` if provided). Key settings:
+    - `systemPrompt`: Describes available tools to the LLM.
+    - `llm`: Bedrock model ID, region, and optionally credentials (not recommended).
+    - `mcpServers`: Defines each MCP agent, its command (e.g., `uvx`), arguments, and environment variables. Example:
+      ```json
       "mcpServers": {
-        "aws-documentation": {
+        "agent-name": {
           "command": "uvx",
-          "args": [
-            "--from",
-            "awslabs-aws-documentation-mcp-server", // Ensure this package name is correct
-            "awslabs.aws-documentation-mcp-server" // Ensure this executable name is correct
-            // Add '.exe' on Windows if needed: "awslabs.aws-documentation-mcp-server.exe"
-          ],
-          "env": {
-            "FASTMCP_LOG_LEVEL": "INFO" // Or "ERROR" for less verbose logs
-          }
-        },
-        "powerpoint": {
-          "command": "python",
-          "args": ["./agent/office-powerpoint-mcp-server/ppt_mcp_server.py"],
-          "env": {
-            "FASTMCP_LOG_LEVEL": "INFO" // Or "ERROR"
-          }
+          "args": ["--from", "published-package-name", "executable_name"],
+          "env": { "FASTMCP_LOG_LEVEL": "INFO" }
         }
+        // ... other agents
       }
-    }
-    ```
-
-    **Important:**
-
-    - Replace `YOUR_AWS_REGION` with the AWS region where you have Bedrock access (e.g., `us-east-1`, `ap-southeast-2`).
-    - Fill in `model` with the correct Bedrock model ID you intend to use.
-    - **Credentials:** It's best practice to configure AWS credentials using environment variables or shared files recognized by the AWS SDK, rather than hardcoding them in this file. If credentials are not in the config, the SDK will attempt to find them automatically.
-    - **`uvx` paths:** Double-check the package name (`awslabs-aws-documentation-mcp-server`) and the executable name (`awslabs.aws-documentation-mcp-server` or potentially with `.exe` on Windows) for the AWS documentation agent, as these might change. Verify by trying to run `uvx --from awslabs-aws-documentation-mcp-server awslabs.aws-documentation-mcp-server --help` in your terminal.
+      ```
+      Ensure AWS region is correct and `uvx` package/executable names are accurate.
 
 ## Running the Application
 
-1.  **Start the Development Server:**
-    From the project root directory:
+1.  **Start Development Server:**
 
     ```bash
     pnpm run dev
     ```
 
-    This command concurrently starts:
+    The Next.js app and MCP servers (launched on demand) will start.
 
-    - The Next.js application (frontend UI and backend API).
-    - It will _automatically_ launch the Python MCP servers (`aws-documentation` via `uvx`, `powerpoint` via `python`) as defined in `mcp.config.json` when the backend API first needs to communicate with them.
+2.  **Open in Browser:** [http://localhost:3000](http://localhost:3000)
 
-2.  **Open the Application:**
-    Navigate to [http://localhost:3000](http://localhost:3000) in your web browser.
+**Example Prompts:**
 
-You should now see the chat interface. You can try interacting with the assistant using prompts like:
-
-- "Search the AWS docs for EC2 instance types"
-- "Create a new presentation"
-- "Open the presentation ./data/pptx/test.pptx"
-- (After opening/creating) "Add a title slide with the title 'My Demo'"
-- (After opening/creating) "Save the presentation to ./output/demo_save.pptx"
+- "Search AWS docs for EC2 instance types"
+- "Create a new PowerPoint presentation"
+- "Create a Word document named report.docx and add a title 'Q3 Report'"
 
 ## Troubleshooting
 
-- **AWS Credentials Error:** Ensure your AWS credentials are correctly configured and accessible to the application (environment variables, `~/.aws/credentials`, or IAM role). Check that the region in `mcp.config.json` is correct and has Bedrock model access enabled.
-- **MCP Agent Connection Error:**
-  - Check the console output where you ran `pnpm run dev` for errors related to `child_process` or the specific agent (`aws-documentation` or `powerpoint`).
-  - Verify the `command` and `args` in `mcp.config.json` are correct for your system (Python path, `uvx` executable names potentially needing `.exe` on Windows).
-  - Ensure Python dependencies (`requirements.txt`) for the PowerPoint agent were installed correctly.
-  - Make sure `uv` and `uvx` are installed and accessible in your PATH.
-- **`uvx` "program not found":** Double-check the `--from <package_name>` and `<executable_name>` in `mcp.config.json`. Try running the `uvx` command directly in your terminal to see if it works. Clear the `uv` cache (`uv cache clean`) if needed.
+- **AWS Credentials:** Verify configuration, region, and Bedrock access.
+- **MCP Agent Connection:** Check console for errors. Confirm `command` and `args` in `mcp.config.json` (especially `uvx` names, add `.exe` on Windows if needed). Ensure `uvx` is in PATH.
+- **`uvx` Issues:** Try `uvx` command directly. Clear `uv` cache: `uv cache clean`.
 
 ## Adding a New MCP Agent
 
-Integrating a new MCP server involves the following steps, demonstrated here using the example of adding an `Office-Word-MCP-Server`:
+1.  **Update `mcp.config.json`:**
 
-1.  **Configure the Server in `mcp.config.json`:**
-    Add an entry for the new server under the `mcpServers` object. Define how to run it (e.g., using `uvx` for published packages or `python` for local scripts). Update the `systemPrompt` to inform the LLM about the new capabilities.
+    - Add a new entry to `mcpServers` for your agent (typically using `uvx`).
+    - Update `systemPrompt` to inform the LLM of the new agent's capabilities.
 
     ```jsonc
-    // mcp.config.json
-    {
-      "systemPrompt": "You are a helpful assistant. You have access to the following tools:\n\n- **AWS Documentation Tools (...):** ...\n- **PowerPoint Tools (...):** ...\n- **Word Tools (prefixed with WordAgent_):** Tools for creating, reading, and manipulating Microsoft Word documents (...).// <-- Updated prompt\n\nUse these tools when appropriate...",
-      "llm": { ... },
-      "mcpServers": {
-        "aws-documentation": { ... },
-        "powerpoint": { ... },
-        // Add the new server entry
-        "word-document-server": {
-          "command": "uvx", // Or "python", etc.
-          "args": ["--from", "office-word-mcp-server", "word_mcp_server"],
-          "env": {}
-        }
+    // Example for a new 'my-new-agent'
+    "mcpServers": {
+      // ... existing agents ...
+      "my-new-agent": {
+        "command": "uvx",
+        "args": ["--from", "my-published-package", "my_agent_executable"],
+        "env": {}
       }
     }
     ```
 
-2.  **Define Agent Actions:**
-    Create a new TypeScript file in `app/api/copilotkit/agents/` (e.g., `wordAgent.ts`). Import `CopilotAction` and `callMcpTool`. Define and export an array of action objects based on the server's API. Each action needs a unique `name`, `description`, `parameters`, and a `handler` that calls `callMcpTool` with the server name (from `mcp.config.json`), the tool name (Python function name), and the arguments.
+2.  **Define Agent Actions (`app/api/copilotkit/agents/newAgent.ts`):**
+    Create a `newAgent.ts` file. Import `CopilotAction` and `callMcpTool`. Define and export an array of actions for the agent.
 
     ```typescript
-    // app/api/copilotkit/agents/wordAgent.ts
-    import { type CopilotAction } from '../types';
+    // app/api/copilotkit/agents/newAgent.ts
+    import { type AgentAction } from '../types';
     import { callMcpTool } from '../utils/mcpInteractionService';
 
-    interface CreateDocumentArgs {
-      filename: string /* ... */;
+    // Define arg interfaces for each action
+    interface MyToolArgs {
+      /* ... */
     }
-    interface AddHeadingArgs {
-      filename: string;
-      text: string /* ... */;
-    }
-    // ... other interfaces
 
-    export const wordAgentActions: CopilotAction[] = [
+    export const newAgentActions: AgentAction[] = [
       {
-        name: 'WordAgent_create_document',
-        description: 'Creates a new Word document...',
+        name: 'NewAgent_my_tool',
+        description: 'Description of my tool.',
         parameters: [
-          /* ... */
+          /* tool parameters */
         ],
-        handler: async (args: CreateDocumentArgs): Promise<string> => {
-          return callMcpTool('word-document-server', 'create_document', args);
-        },
+        handler: async (args: MyToolArgs) =>
+          callMcpTool('my-new-agent', 'actual_tool_name_on_server', args),
       },
-      {
-        name: 'WordAgent_add_heading',
-        description: 'Adds a heading...',
-        parameters: [
-          /* ... */
-        ],
-        handler: async (args: AddHeadingArgs): Promise<string> => {
-          return callMcpTool('word-document-server', 'add_heading', args);
-        },
-      },
-      // ... other actions
+      // ... other actions for this agent
     ];
     ```
 
-3.  **Integrate Actions in API Route:**
-    In `app/api/copilotkit/route.ts`, import the newly exported actions array and spread it into the `allActions` array.
+3.  **Integrate in API Route (`app/api/copilotkit/route.ts`):**
+    Import and add your `newAgentActions` to the `allActions` array.
 
     ```typescript
     // app/api/copilotkit/route.ts
-    import { awsDocumentationActions } from './agents/awsDocumentationAgent';
-    import { powerPointAgentActions } from './agents/powerPointAgent';
-    import { wordAgentActions } from './agents/wordAgent'; // <-- Import new actions
-    // ... other imports
+    // ... other imports ...
+    import { newAgentActions } from './agents/newAgent'; // <-- Import
 
     const allActions: any[] = [
-      ...awsDocumentationActions,
-      ...powerPointAgentActions,
-      ...wordAgentActions, // <-- Add new actions here
+      // ... existing actions ...
+      ...newAgentActions, // <-- Add
     ];
-
-    // ... rest of the file
+    // ...
     ```
 
-4.  **(If Necessary) Install Dependencies:**
-    If the new MCP server is a local Python script (like the PowerPoint agent), ensure its dependencies are installed. Add its `requirements.txt` path to the installation instructions or provide separate commands.
+4.  **Dependencies:** Ensure `uvx` can find and run the new agent. If it requires local files/setup not handled by `uvx`, adjust prerequisites and setup steps accordingly.
 
 ## License
 
-Distributed under the MIT License. See `
+Distributed under the MIT License. See `LICENSE` file for more information.
