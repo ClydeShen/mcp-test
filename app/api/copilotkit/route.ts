@@ -10,6 +10,8 @@ import { NextRequest } from 'next/server';
 import path from 'path';
 import { awsDocumentationActions } from './agents/awsDocumentationAgent';
 import { powerPointAgentActions } from './agents/powerPointAgent';
+// Import actions from the new Word agent
+import { wordAgentActions } from './agents/wordAgent';
 // Import from new types file
 import { type McpConfig } from './types';
 // MCP Client Manager is implicitly used via the agent modules
@@ -87,8 +89,9 @@ const serviceAdapter = new LangChainAdapter({
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const allActions: any[] = [
   ...awsDocumentationActions,
-  ...powerPointAgentActions, // Currently exports an empty array
+  ...powerPointAgentActions,
   // Add future agent actions here
+  ...wordAgentActions, // Add the Word agent actions
 ];
 
 // --- CopilotKit Runtime Setup ---

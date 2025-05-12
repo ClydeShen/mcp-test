@@ -145,6 +145,95 @@ You should now see the chat interface. You can try interacting with the assistan
   - Make sure `uv` and `uvx` are installed and accessible in your PATH.
 - **`uvx` "program not found":** Double-check the `--from <package_name>` and `<executable_name>` in `mcp.config.json`. Try running the `uvx` command directly in your terminal to see if it works. Clear the `uv` cache (`uv cache clean`) if needed.
 
+## Adding a New MCP Agent
+
+Integrating a new MCP server involves the following steps, demonstrated here using the example of adding an `Office-Word-MCP-Server`:
+
+1.  **Configure the Server in `mcp.config.json`:**
+    Add an entry for the new server under the `mcpServers` object. Define how to run it (e.g., using `uvx` for published packages or `python` for local scripts). Update the `systemPrompt` to inform the LLM about the new capabilities.
+
+    ```jsonc
+    // mcp.config.json
+    {
+      "systemPrompt": "You are a helpful assistant. You have access to the following tools:\n\n- **AWS Documentation Tools (...):** ...\n- **PowerPoint Tools (...):** ...\n- **Word Tools (prefixed with WordAgent_):** Tools for creating, reading, and manipulating Microsoft Word documents (...).// <-- Updated prompt\n\nUse these tools when appropriate...",
+      "llm": { ... },
+      "mcpServers": {
+        "aws-documentation": { ... },
+        "powerpoint": { ... },
+        // Add the new server entry
+        "word-document-server": {
+          "command": "uvx", // Or "python", etc.
+          "args": ["--from", "office-word-mcp-server", "word_mcp_server"],
+          "env": {}
+        }
+      }
+    }
+    ```
+
+2.  **Define Agent Actions:**
+    Create a new TypeScript file in `app/api/copilotkit/agents/` (e.g., `wordAgent.ts`). Import `CopilotAction` and `callMcpTool`. Define and export an array of action objects based on the server's API. Each action needs a unique `name`, `description`, `parameters`, and a `handler` that calls `callMcpTool` with the server name (from `mcp.config.json`), the tool name (Python function name), and the arguments.
+
+    ```typescript
+    // app/api/copilotkit/agents/wordAgent.ts
+    import { type CopilotAction } from '../types';
+    import { callMcpTool } from '../utils/mcpInteractionService';
+
+    interface CreateDocumentArgs {
+      filename: string /* ... */;
+    }
+    interface AddHeadingArgs {
+      filename: string;
+      text: string /* ... */;
+    }
+    // ... other interfaces
+
+    export const wordAgentActions: CopilotAction[] = [
+      {
+        name: 'WordAgent_create_document',
+        description: 'Creates a new Word document...',
+        parameters: [
+          /* ... */
+        ],
+        handler: async (args: CreateDocumentArgs): Promise<string> => {
+          return callMcpTool('word-document-server', 'create_document', args);
+        },
+      },
+      {
+        name: 'WordAgent_add_heading',
+        description: 'Adds a heading...',
+        parameters: [
+          /* ... */
+        ],
+        handler: async (args: AddHeadingArgs): Promise<string> => {
+          return callMcpTool('word-document-server', 'add_heading', args);
+        },
+      },
+      // ... other actions
+    ];
+    ```
+
+3.  **Integrate Actions in API Route:**
+    In `app/api/copilotkit/route.ts`, import the newly exported actions array and spread it into the `allActions` array.
+
+    ```typescript
+    // app/api/copilotkit/route.ts
+    import { awsDocumentationActions } from './agents/awsDocumentationAgent';
+    import { powerPointAgentActions } from './agents/powerPointAgent';
+    import { wordAgentActions } from './agents/wordAgent'; // <-- Import new actions
+    // ... other imports
+
+    const allActions: any[] = [
+      ...awsDocumentationActions,
+      ...powerPointAgentActions,
+      ...wordAgentActions, // <-- Add new actions here
+    ];
+
+    // ... rest of the file
+    ```
+
+4.  **(If Necessary) Install Dependencies:**
+    If the new MCP server is a local Python script (like the PowerPoint agent), ensure its dependencies are installed. Add its `requirements.txt` path to the installation instructions or provide separate commands.
+
 ## License
 
-Distributed under the MIT License. See `LICENSE` file for more information.
+Distributed under the MIT License. See `
