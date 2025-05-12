@@ -2,9 +2,27 @@ import { Client as McpClient } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import fs from 'fs';
 import path from 'path';
+// Import McpConfig from shared types file
+import { type McpConfig } from '../types';
+
+// Helper function to create a Record<string, string> from NodeJS.ProcessEnv
+function getSanitizedEnv(
+  customEnv?: Record<string, string>
+): Record<string, string> {
+  const sanitized: Record<string, string> = {};
+  for (const key in process.env) {
+    if (Object.prototype.hasOwnProperty.call(process.env, key)) {
+      const value = process.env[key];
+      if (typeof value === 'string') {
+        sanitized[key] = value;
+      }
+    }
+  }
+  return { ...sanitized, ...(customEnv || {}) };
+}
 
 // TODO: Consider refactoring config loading into its own utility if used in many places
-let config: any;
+let config: McpConfig;
 try {
   const configPath = path.join(process.cwd(), 'mcp.config.json');
   const configFile = fs.readFileSync(configPath, 'utf-8');
@@ -14,7 +32,10 @@ try {
     '(mcpClientManager) Error loading or parsing mcp.config.json:',
     error
   );
-  config = { llm: {}, mcpServers: {} }; // Basic fallback
+  // Throw an error as the config is essential for operation
+  throw new Error(
+    `(mcpClientManager) Failed to load or parse mcp.config.json: ${error}`
+  );
 }
 
 // Manages active MCP client connections
@@ -72,7 +93,7 @@ export async function getMcpClient(serverName: string): Promise<McpClient> {
   const transport = new StdioClientTransport({
     command: serverConfig.command,
     args: resolvedArgs,
-    env: { ...process.env, ...(serverConfig.env || {}) }, // Merge environment variables
+    env: getSanitizedEnv(serverConfig.env), // Use sanitized env
   });
 
   const clientInstance = new McpClient({

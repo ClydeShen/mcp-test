@@ -5,6 +5,10 @@
 // when the agent is updated or replaced.
 
 import { getMcpClient } from '../utils/mcpClientManager';
+// Import the CopilotAction interface (assuming it's exported from the other file)
+// If not exported, we need to define it here or in a shared types file.
+// Assuming export for now:
+import { type CopilotAction } from './awsDocumentationAgent';
 
 // --- TypeScript Interfaces for Handler Arguments ---
 interface SetCorePropertiesArgs {
@@ -121,7 +125,8 @@ interface AddChartArgs {
 // --- Helper function for generic MCP tool calls ---
 async function handlePptToolCall(
   toolName: string,
-  args: any,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  args: any, // Keep any here as it handles various specific types, ignore lint rule
   requiredParams: string[]
 ) {
   const missingParams = requiredParams.filter((param) => !(param in args));
@@ -180,7 +185,7 @@ async function handlePptToolCall(
         const rawDetails = JSON.stringify(result.content as unknown);
         return JSON.stringify({ success: true, raw_details: rawDetails });
       }
-    } catch (parseError) {
+    } catch (e: unknown) {
       // We know parseError happened, likely on result.content[0].text
       // Log the error and the text that caused it, if possible
       let problematicText = '(unavailable)';
@@ -192,27 +197,29 @@ async function handlePptToolCall(
         ) {
           problematicText = result.content[0].text;
         }
-      } catch (e) {
+      } catch (e: unknown) {
         /* Ignore errors accessing result here */
+        console.error(
+          '(powerPointAgent) Error accessing result content for logging:',
+          e
+        );
       }
 
       console.warn(
         `(powerPointAgent) Failed to parse JSON result for ${toolName}. Problematic text: ${problematicText}`,
-        parseError
+        e
       );
       // Return a structured error indicating parse failure
       return JSON.stringify({
         success: false,
         error: `Failed to parse agent response for ${toolName}.`,
-        details: `Parse Error: ${
-          parseError instanceof Error ? parseError.message : String(parseError)
-        }`,
+        details: `Parse Error: ${e instanceof Error ? e.message : String(e)}`,
       });
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`(powerPointAgent) Agent error calling ${toolName}:`, error);
     // Handle network/connection errors specifically if possible
-    const errorMessage = error.message || 'Unknown error';
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return JSON.stringify({
       error: `Failed to execute PowerPoint ${toolName} command.`,
       details: errorMessage,
@@ -222,13 +229,16 @@ async function handlePptToolCall(
 
 // --- Define Actions based on README ---
 
-const powerPointAgentActions: any[] = [
+// Use the generic CopilotAction with specific argument types where possible
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const powerPointAgentActions: CopilotAction<any>[] = [
   // --- Presentation Tools ---
   {
     name: 'PowerPointAgent_create_presentation',
     description:
       'Creates a new, empty PowerPoint presentation and returns its ID.',
     parameters: [], // No specific parameters needed to create
+    // No args for handler, default TArgs=any is fine
     handler: async () => handlePptToolCall('create_presentation', {}, []),
   },
   {
@@ -245,7 +255,7 @@ const powerPointAgentActions: any[] = [
       },
     ],
     // Keep the specific handler for open_presentation as it needs careful ID extraction
-    handler: async (args: { file_path: string }) => {
+    handler: async (args: { file_path: string }): Promise<string> => {
       const { file_path } = args;
       const serverName = 'powerpoint';
       let presentation_id: string | null = null;
@@ -303,26 +313,30 @@ const powerPointAgentActions: any[] = [
               'Unexpected content structure from open_presentation'
             );
           }
-        } catch (e: any) {
+        } catch (error: unknown) {
           console.error(
             '(powerPointAgent) Failed to parse open_presentation result or find presentation_id',
-            e
+            error
           );
           // Rethrow with more context
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
           throw new Error(
             `(powerPointAgent) Failed to get presentation_id. Raw Result: ${JSON.stringify(
               openResult
-            )}, Error: ${e.message}`
+            )}, Error: ${errorMessage}`
           );
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error(
           '(powerPointAgent) Agent/MCP error in open_presentation:',
           error
         );
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
         return JSON.stringify({
           error: 'Failed to execute PowerPoint open_presentation command.',
-          details: error.message,
+          details: errorMessage,
         });
       }
     },
@@ -345,7 +359,10 @@ const powerPointAgentActions: any[] = [
         required: true,
       },
     ],
-    handler: async (args: { presentation_id: string; file_path: string }) =>
+    handler: async (args: {
+      presentation_id: string;
+      file_path: string;
+    }): Promise<string> =>
       handlePptToolCall('save_presentation', args, [
         'presentation_id',
         'file_path',
@@ -363,7 +380,7 @@ const powerPointAgentActions: any[] = [
         required: true,
       },
     ],
-    handler: async (args: { presentation_id: string }) =>
+    handler: async (args: { presentation_id: string }): Promise<string> =>
       handlePptToolCall('get_presentation_info', args, ['presentation_id']),
   },
   {
@@ -391,7 +408,7 @@ const powerPointAgentActions: any[] = [
       },
       // Add other properties like subject, keywords, category, comments as needed based on python-pptx capabilities
     ],
-    handler: async (args: SetCorePropertiesArgs) =>
+    handler: async (args: SetCorePropertiesArgs): Promise<string> =>
       handlePptToolCall('set_core_properties', args, ['presentation_id']),
   },
 
@@ -422,7 +439,7 @@ const powerPointAgentActions: any[] = [
         required: false,
       },
     ],
-    handler: async (args: AddSlideArgs) =>
+    handler: async (args: AddSlideArgs): Promise<string> =>
       handlePptToolCall('add_slide', args, ['presentation_id', 'layout_index']),
   },
   {
@@ -443,7 +460,7 @@ const powerPointAgentActions: any[] = [
         required: true,
       },
     ],
-    handler: async (args: GetSlideInfoArgs) =>
+    handler: async (args: GetSlideInfoArgs): Promise<string> =>
       handlePptToolCall('get_slide_info', args, [
         'presentation_id',
         'slide_index',
@@ -479,7 +496,7 @@ const powerPointAgentActions: any[] = [
         required: true,
       },
     ],
-    handler: async (args: PopulatePlaceholderArgs) =>
+    handler: async (args: PopulatePlaceholderArgs): Promise<string> =>
       handlePptToolCall('populate_placeholder', args, [
         'presentation_id',
         'slide_index',
@@ -526,7 +543,7 @@ const powerPointAgentActions: any[] = [
         required: false,
       },
     ],
-    handler: async (args: AddBulletPointsArgs) =>
+    handler: async (args: AddBulletPointsArgs): Promise<string> =>
       handlePptToolCall('add_bullet_points', args, [
         'presentation_id',
         'slide_index',
@@ -585,7 +602,7 @@ const powerPointAgentActions: any[] = [
       },
       // Add font formatting parameters if supported by the agent tool (e.g., font_size, bold, italic)
     ],
-    handler: async (args: AddTextboxArgs) =>
+    handler: async (args: AddTextboxArgs): Promise<string> =>
       handlePptToolCall('add_textbox', args, [
         'presentation_id',
         'slide_index',
@@ -648,7 +665,7 @@ const powerPointAgentActions: any[] = [
         required: false,
       },
     ],
-    handler: async (args: AddImageArgs) =>
+    handler: async (args: AddImageArgs): Promise<string> =>
       handlePptToolCall('add_image', args, [
         'presentation_id',
         'slide_index',
@@ -706,7 +723,7 @@ const powerPointAgentActions: any[] = [
         required: false,
       },
     ],
-    handler: async (args: AddImageFromBase64Args) =>
+    handler: async (args: AddImageFromBase64Args): Promise<string> =>
       handlePptToolCall('add_image_from_base64', args, [
         'presentation_id',
         'slide_index',
@@ -772,7 +789,7 @@ const powerPointAgentActions: any[] = [
       },
       // NOTE: Need a way to populate table cells. Use format_table_cell.
     ],
-    handler: async (args: AddTableArgs) =>
+    handler: async (args: AddTableArgs): Promise<string> =>
       handlePptToolCall('add_table', args, [
         'presentation_id',
         'slide_index',
@@ -827,7 +844,7 @@ const powerPointAgentActions: any[] = [
       },
       // Add other formatting parameters like font size, bold, alignment etc. as needed
     ],
-    handler: async (args: FormatTableCellArgs) =>
+    handler: async (args: FormatTableCellArgs): Promise<string> =>
       handlePptToolCall('format_table_cell', args, [
         'presentation_id',
         'slide_index',
@@ -887,7 +904,7 @@ const powerPointAgentActions: any[] = [
         required: true,
       },
     ],
-    handler: async (args: AddShapeArgs) =>
+    handler: async (args: AddShapeArgs): Promise<string> =>
       handlePptToolCall('add_shape', args, [
         'presentation_id',
         'slide_index',
@@ -1006,7 +1023,7 @@ const powerPointAgentActions: any[] = [
       },
       // Add more chart formatting options as needed
     ],
-    handler: async (args: AddChartArgs) =>
+    handler: async (args: AddChartArgs): Promise<string> =>
       handlePptToolCall('add_chart', args, [
         'presentation_id',
         'slide_index',

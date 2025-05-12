@@ -1,7 +1,31 @@
 import { getMcpClient } from '../utils/mcpClientManager';
 
-// Define the actions for the AWS Documentation agent
-export const awsDocumentationActions: any[] = [
+// Define an interface for the action structure using a generic for handler args
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export interface CopilotAction<TArgs = any> {
+  name: string;
+  description: string;
+  parameters: {
+    name: string;
+    type: string;
+    description: string;
+    required?: boolean;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    default?: any; // Keeping 'any' for default, ignoring lint rule
+    items?: {
+      type: string;
+      items?: {
+        // Add nested items for array of arrays
+        type: string;
+      };
+    };
+  }[];
+  handler: (args: TArgs) => Promise<string>; // Use TArgs for handler args
+}
+
+// Define the actions for the AWS Documentation agent using the interface
+// Let TypeScript infer TArgs or explicitly set if needed (defaults to any)
+export const awsDocumentationActions: CopilotAction[] = [
   {
     name: 'AWSDocumentation_read_documentation',
     description:
@@ -14,7 +38,7 @@ export const awsDocumentationActions: any[] = [
         required: true,
       },
     ],
-    handler: async (args: { url: string }) => {
+    handler: async (args: { url: string }): Promise<string> => {
       const { url } = args;
       const serverName = 'aws-documentation';
       try {
@@ -32,16 +56,18 @@ export const awsDocumentationActions: any[] = [
         return JSON.stringify(
           result?.content || { message: 'No content received from tool' }
         );
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('(awsDocumentationAgent) Read error:', error);
-        if (error.message?.includes('connect')) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        if (errorMessage?.includes('connect')) {
           console.error(
             `(awsDocumentationAgent) Connection error detected for ${serverName}`
           );
         }
         return JSON.stringify({
           error: 'Failed to read AWS documentation using MCP SDK.',
-          details: error.message,
+          details: errorMessage,
         });
       }
     },
@@ -65,7 +91,10 @@ export const awsDocumentationActions: any[] = [
         default: 10,
       },
     ],
-    handler: async (args: { search_phrase: string; limit?: number }) => {
+    handler: async (args: {
+      search_phrase: string;
+      limit?: number;
+    }): Promise<string> => {
       const { search_phrase, limit } = args;
       const serverName = 'aws-documentation';
       try {
@@ -83,16 +112,18 @@ export const awsDocumentationActions: any[] = [
         return JSON.stringify(
           result?.content || { message: 'No content received from tool' }
         );
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('(awsDocumentationAgent) Search error:', error);
-        if (error.message?.includes('connect')) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        if (errorMessage?.includes('connect')) {
           console.error(
             `(awsDocumentationAgent) Connection error detected for ${serverName}`
           );
         }
         return JSON.stringify({
           error: 'Failed to search AWS documentation using MCP SDK.',
-          details: error.message,
+          details: errorMessage,
         });
       }
     },
@@ -109,7 +140,7 @@ export const awsDocumentationActions: any[] = [
         required: true,
       },
     ],
-    handler: async (args: { url: string }) => {
+    handler: async (args: { url: string }): Promise<string> => {
       const { url } = args;
       const serverName = 'aws-documentation';
       try {
@@ -127,16 +158,18 @@ export const awsDocumentationActions: any[] = [
         return JSON.stringify(
           result?.content || { message: 'No content received from tool' }
         );
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('(awsDocumentationAgent) Recommend error:', error);
-        if (error.message?.includes('connect')) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        if (errorMessage?.includes('connect')) {
           console.error(
             `(awsDocumentationAgent) Connection error detected for ${serverName}`
           );
         }
         return JSON.stringify({
           error: 'Failed to get recommendations using MCP SDK.',
-          details: error.message,
+          details: errorMessage,
         });
       }
     },

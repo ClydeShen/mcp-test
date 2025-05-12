@@ -10,19 +10,26 @@ import { NextRequest } from 'next/server';
 import path from 'path';
 import { awsDocumentationActions } from './agents/awsDocumentationAgent';
 import { powerPointAgentActions } from './agents/powerPointAgent';
+// Import from new types file
+import { type McpConfig } from './types';
 // MCP Client Manager is implicitly used via the agent modules
 // import { getMcpClient } from './utils/mcpClientManager';
 
 // --- Load configuration ---
 // Consider refactoring config loading into its own utility if used in many places
-let config: any;
+let config: McpConfig;
 try {
   const configPath = path.join(process.cwd(), 'mcp.config.json');
   const configFile = fs.readFileSync(configPath, 'utf-8');
   config = JSON.parse(configFile);
-} catch (error) {
+} catch (error: unknown) {
   console.error('(route.ts) Error loading or parsing mcp.config.json:', error);
-  config = { llm: {}, mcpServers: {} }; // Basic fallback
+  // Throw an error as the config is essential for operation
+  throw new Error(
+    `Failed to load or parse mcp.config.json: ${
+      error instanceof Error ? error.message : String(error)
+    }`
+  );
 }
 
 // --- Instantiate Bedrock Model ---
@@ -50,14 +57,19 @@ if (!credentials.accessKeyId || !credentials.secretAccessKey) {
   );
 }
 
+const bedrockCredentials =
+  credentials.accessKeyId && credentials.secretAccessKey
+    ? {
+        accessKeyId: credentials.accessKeyId,
+        secretAccessKey: credentials.secretAccessKey,
+      }
+    : undefined;
+
 const model = new BedrockChat({
   model: config.llm.model,
   region: config.llm.region,
   temperature: config.llm.temperature ?? 0.1,
-  credentials:
-    credentials.accessKeyId && credentials.secretAccessKey
-      ? credentials
-      : undefined,
+  credentials: bedrockCredentials,
   modelKwargs: {
     // Required for Claude 3 tool use on Bedrock
     anthropic_version: 'bedrock-2023-05-31',
@@ -72,6 +84,7 @@ const serviceAdapter = new LangChainAdapter({
 });
 
 // --- Aggregate Actions ---
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const allActions: any[] = [
   ...awsDocumentationActions,
   ...powerPointAgentActions, // Currently exports an empty array
