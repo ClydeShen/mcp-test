@@ -44,7 +44,7 @@ const Layout = (props: LayoutProps) => {
           </Container>
         </Toolbar>
       </AppBar>
-      <Container maxWidth='xl' component={Stack} flex={1}>
+      <Container maxWidth='lg' component={Stack} flex={1}>
         <Stack
           direction='row'
           id='container'

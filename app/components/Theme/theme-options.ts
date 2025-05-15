@@ -46,17 +46,6 @@ enum Color {
   FLICKITY_BUTTON_BG_SEMI_TRANSPARENT = 'hsla(0,0%,100%,.75)',
 }
 
-export const THEME_APP_PALETTE = Object.freeze({
-  primaryAction: Color.BRAND_PRIMARY_MAIN,
-  accentDark: Color.BRAND_PRIMARY_DARK_ACCENT,
-  accentSecondary: Color.BRAND_SECONDARY_ACCENT_GREEN,
-  backgroundLightNeutral: Color.BACKGROUND_NEUTRAL_LIGHT_GRAY,
-  backgroundMain: Color.BACKGROUND_MAIN_DEFAULT,
-  textPrimary: Color.TEXT_PRIMARY_DEFAULT,
-  borderNeutral: Color.BORDER_NEUTRAL_LIGHT_GRAY,
-  textMuted: Color.TEXT_MUTED_DARK_GRAY,
-});
-
 const palette = {
   white: Color.COMMON_UTILITY_WHITE,
   black: Color.COMMON_UTILITY_BLACK_PROXY,
