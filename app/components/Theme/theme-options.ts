@@ -176,7 +176,7 @@ const baseThemeOptions = Object.freeze({
       fontSize: '1.4rem',
       fontWeight: FontWeight.REGULAR,
       letterSpacing: '-0.14px',
-      lineHeight: 16 / 14,
+      lineHeight: 14 / 14,
     },
     subtitle1: {
       fontSize: '1.8rem',
@@ -185,7 +185,7 @@ const baseThemeOptions = Object.freeze({
     },
     subtitle2: {
       fontSize: '1.5rem',
-      lineHeight: 16 / 14,
+      lineHeight: 14 / 14,
       fontWeight: FontWeight.MEDIUM,
     },
     overline: {

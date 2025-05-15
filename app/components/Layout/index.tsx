@@ -1,4 +1,11 @@
-import { AppBar, Stack, Toolbar } from '@mui/material';
+import {
+  AppBar,
+  Container,
+  Divider,
+  Stack,
+  Toolbar,
+  Typography,
+} from '@mui/material';
 import Image from 'next/image';
 import React from 'react';
 
@@ -16,8 +23,9 @@ const Layout = (props: LayoutProps) => {
         bgcolor: 'grey.50',
         backgroundImage: "url('/bg1.jpg')",
         backgroundRepeat: 'no-repeat',
-        backgroundColor: 'rgba(255,255,255,0.2)',
-        backgroundBlendMode: 'lighten',
+        backgroundSize: 'cover',
+        // backgroundColor: 'rgba(255,255,255,0.2)',
+        // backgroundBlendMode: 'lighten',
       }}
     >
       <AppBar
@@ -31,22 +39,61 @@ const Layout = (props: LayoutProps) => {
             borderBottom: () => `1px solid rgba(102,102,102,.5)`,
           }}
         >
-          <Image src='/logo.png' alt='Logo' width={40} height={40} />
+          <Container maxWidth='xl'>
+            <Image src='/logo.png' alt='Logo' width={40} height={40} />
+          </Container>
         </Toolbar>
       </AppBar>
-      <Stack
-        direction='row'
-        id='container'
-        flex={1}
-        sx={{ pt: 8, color: 'white' }}
-      >
-        {children}
-      </Stack>
+      <Container maxWidth='xl' component={Stack} flex={1}>
+        <Stack
+          direction='row'
+          id='container'
+          flex={1}
+          sx={{
+            pt: 12,
+            pb: 4,
+          }}
+        >
+          {children}
+        </Stack>
+      </Container>
       <Stack
         component={'footer'}
-        sx={{ height: 50, backgroundColor: '#323232', color: 'white' }}
+        justifyContent='center'
+        sx={{ height: 100, backgroundColor: '#323232', color: 'white', py: 6 }}
       >
-        footer
+        <Container maxWidth='xl'>
+          <Stack direction='row' alignItems='center' spacing={3}>
+            <Image src='/logo-w.png' alt='Logo' width={90} height={33} />
+            <Stack
+              direction='row'
+              spacing={0.5}
+              divider={
+                <Divider
+                  orientation='vertical'
+                  flexItem
+                  sx={{ borderColor: 'white' }}
+                />
+              }
+            >
+              <Typography
+                variant='subtitle2'
+                component='p'
+                sx={{ lineHeight: 1 }}
+              >
+                One New Zealand Group Limited
+              </Typography>
+              <Typography
+                variant='subtitle2'
+                component='a'
+                href='https://one.nz'
+                sx={{ lineHeight: 1 }}
+              >
+                one.nz
+              </Typography>
+            </Stack>
+          </Stack>
+        </Container>
       </Stack>
     </Stack>
   );

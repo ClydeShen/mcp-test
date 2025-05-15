@@ -93,3 +93,21 @@
     @apply bg-background text-foreground;
   }
 }
+
+.copilotKitMessages {
+  border-top-left-radius: 0.75rem;
+  border-top-right-radius: 0.75rem;
+}
+.copilotKitResponseButton {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  border: 1px solid transparent;
+  border-radius: 23px;
+  padding: 12px 30px 13px;
+  margin: 20px 0 10px;
+  line-height: 1.266666;
+  letter-spacing: -0.5px;
+  font-weight: 500;
+  text-align: center;
+  height: 46px;
+}

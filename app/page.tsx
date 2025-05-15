@@ -4,31 +4,16 @@ import { CopilotChat, CopilotKitCSSProperties } from '@copilotkit/react-ui';
 import '@copilotkit/react-ui/styles.css';
 // MUI Imports
 import Box from '@mui/material/Box';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemText from '@mui/material/ListItemText';
-import { styled, Theme, useTheme } from '@mui/material/styles';
-import Typography from '@mui/material/Typography';
+import { useTheme } from '@mui/material/styles';
 
-import { Stack } from '@mui/material';
+import { Stack, Typography } from '@mui/material';
+import configJson from '../mcp.config.json';
+import { CustomAssistantMessage } from './components/AssistantMessage';
 import { CopilotActionHandler } from './components/CopilotActionHandler';
 import Layout from './components/Layout';
+// const drawerWidth = '65vw'; // Keep a fixed width for the persistent drawer
 
-const drawerWidth = '65vw'; // Keep a fixed width for the persistent drawer
-
-const Main = styled('main', {
-  shouldForwardProp: (prop: string) => prop !== 'open',
-})<{ open?: boolean }>(({ theme }: { theme: Theme }) => ({
-  flexGrow: 1,
-  padding: theme.spacing(3),
-  [theme.breakpoints.down('md')]: {
-    padding: theme.spacing(2),
-  },
-  marginLeft: 0,
-}));
-
-const INSTRUCTIONS =
-  'You are a helpful assistant. You have access to tools for searching AWS documentation and manipulating PowerPoint files. Use these tools when appropriate.';
+const INSTRUCTIONS = configJson.systemPrompt;
 
 export default function Home() {
   const theme = useTheme();
@@ -57,24 +42,16 @@ export default function Home() {
 
   return (
     <Layout>
-      <CopilotActionHandler />
-      {/* <Drawer
-        variant='persistent'
-        anchor='left'
-        open={true}
-        sx={{
-          width: drawerWidth,
-          flexShrink: 0,
-          [`& .MuiDrawer-paper`]: {
-            pt: 8,
-            width: drawerWidth,
-            boxSizing: 'border-box',
-            borderRight: `1px solid ${theme.palette.divider}`,
-            '--copilot-kit-primary-color': `${theme.palette.primary.main}`,
-          },
-        }}
-      > */}
-      <Stack sx={{ width: drawerWidth }}>
+      <Stack flex={1} spacing={4}>
+        <Typography
+          variant='h4'
+          component='h2'
+          sx={{ color: 'white' }}
+          gutterBottom
+        >
+          Enterprise Architecture assistant.
+        </Typography>
+        <CopilotActionHandler />
         <Box
           component={'div'}
           sx={{
@@ -95,6 +72,7 @@ export default function Home() {
               ['--copilot-kit-response-button-color']: 'rgb(50, 50, 50)',
               ['--copilot-kit-response-button-background-color']:
                 'rgb(255, 255, 255)',
+              // ['.']
             } as CopilotKitCSSProperties
           }
         >
@@ -105,25 +83,10 @@ export default function Home() {
               title: 'MCP Assistant',
               initial: 'Need any help?',
             }}
+            AssistantMessage={CustomAssistantMessage}
           />
         </Box>
       </Stack>
-      {/* </Drawer> */}
-
-      {/* <Main> */}
-      <Stack sx={{ padding: 2 }}>
-        <Typography variant='h5' component='h2' gutterBottom>
-          Example Prompts:
-        </Typography>
-        <List dense>
-          {examplePrompts.map((prompt, index) => (
-            <ListItem key={index} disablePadding>
-              <ListItemText primary={prompt} />
-            </ListItem>
-          ))}
-        </List>
-      </Stack>
-      {/* </Main> */}
     </Layout>
   );
 }
