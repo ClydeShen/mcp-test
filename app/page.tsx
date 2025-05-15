@@ -1,17 +1,18 @@
 'use client';
 
-import { CopilotChat } from '@copilotkit/react-ui';
+import { CopilotChat, CopilotKitCSSProperties } from '@copilotkit/react-ui';
 import '@copilotkit/react-ui/styles.css';
 // MUI Imports
 import Box from '@mui/material/Box';
-import Drawer from '@mui/material/Drawer';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import ListItemText from '@mui/material/ListItemText';
 import { styled, Theme, useTheme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 
+import { Stack } from '@mui/material';
 import { CopilotActionHandler } from './components/CopilotActionHandler';
+import Layout from './components/Layout';
 
 const drawerWidth = '65vw'; // Keep a fixed width for the persistent drawer
 
@@ -55,10 +56,9 @@ export default function Home() {
   ];
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'grey.50' }}>
+    <Layout>
       <CopilotActionHandler />
-
-      <Drawer
+      {/* <Drawer
         variant='persistent'
         anchor='left'
         open={true}
@@ -66,19 +66,37 @@ export default function Home() {
           width: drawerWidth,
           flexShrink: 0,
           [`& .MuiDrawer-paper`]: {
+            pt: 8,
             width: drawerWidth,
             boxSizing: 'border-box',
             borderRight: `1px solid ${theme.palette.divider}`,
             '--copilot-kit-primary-color': `${theme.palette.primary.main}`,
           },
         }}
-      >
+      > */}
+      <Stack sx={{ width: drawerWidth }}>
         <Box
+          component={'div'}
           sx={{
             height: '100%',
             display: 'flex',
             flexDirection: 'column',
           }}
+          style={
+            {
+              ['--copilot-kit-primary-color']: 'rgb(0, 164, 95)',
+              ['--copilot-kit-contrast-color']: 'rgb(255, 255, 255)',
+              ['--copilot-kit-secondary-color']: 'rgb(240, 242, 245)',
+              ['--copilot-kit-secondary-contrast-color']: 'rgb(50, 50, 50)',
+              ['--copilot-kit-background-color']: 'rgb(255, 255, 255)',
+              ['--copilot-kit-muted-color']: 'rgb(90, 99, 118)',
+              ['--copilot-kit-separator-color']: 'rgba(50, 50, 50, 0.08)',
+              ['--copilot-kit-scrollbar-color']: 'rgba(50, 50, 50, 0.2)',
+              ['--copilot-kit-response-button-color']: 'rgb(50, 50, 50)',
+              ['--copilot-kit-response-button-background-color']:
+                'rgb(255, 255, 255)',
+            } as CopilotKitCSSProperties
+          }
         >
           <CopilotChat
             className='h-full flex flex-col'
@@ -89,20 +107,23 @@ export default function Home() {
             }}
           />
         </Box>
-      </Drawer>
+      </Stack>
+      {/* </Drawer> */}
 
-      <Main>
+      {/* <Main> */}
+      <Stack sx={{ padding: 2 }}>
         <Typography variant='h5' component='h2' gutterBottom>
           Example Prompts:
         </Typography>
         <List dense>
           {examplePrompts.map((prompt, index) => (
             <ListItem key={index} disablePadding>
-              <ListItemText primary={prompt} sx={{ color: 'text.secondary' }} />
+              <ListItemText primary={prompt} />
             </ListItem>
           ))}
         </List>
-      </Main>
-    </Box>
+      </Stack>
+      {/* </Main> */}
+    </Layout>
   );
 }

@@ -1,22 +1,85 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import "@copilotkit/react-ui/styles.css";
-import { CopilotKit } from "@copilotkit/react-core";
+import { CopilotKit } from '@copilotkit/react-core';
+import '@copilotkit/react-ui/styles.css';
+import type { Metadata } from 'next';
+import localFont from 'next/font/local';
+import './globals.css';
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+export const Euclid = localFont({
+  src: [
+    {
+      path: '../public/EuclidCircularA-Light-WebXL.woff',
+      weight: '100',
+      style: 'normal',
+    },
+    {
+      path: '../public/EuclidCircularA-Light-WebXL.woff',
+      weight: '200',
+      style: 'normal',
+    },
+    {
+      path: '../public/EuclidCircularA-Light-WebXL.woff',
+      weight: '300',
+      style: 'normal',
+    },
+    {
+      path: '../public/EuclidCircularA-Light-WebXL.woff',
+      weight: '300',
+      style: 'italic',
+    },
+    {
+      path: '../public/EuclidCircularA-Light-WebXL.woff',
+      weight: '400',
+      style: 'normal',
+    },
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+    {
+      path: '../public/EuclidCircularA-Medium-WebXL.woff',
+      weight: '500',
+      style: 'normal',
+    },
+    {
+      path: '../public/EuclidCircularA-Medium-WebXL.woff',
+      weight: '500',
+      style: 'italic',
+    },
+    {
+      path: '../public/EuclidCircularA-Medium-WebXL.woff',
+      weight: '600',
+      style: 'normal',
+    },
+    {
+      path: '../public/EuclidCircularA-Medium-WebXL.woff',
+      weight: '600',
+      style: 'italic',
+    },
+    {
+      path: '../public/EuclidCircularA-Medium-WebXL.woff',
+      weight: '700',
+      style: 'normal',
+    },
+    {
+      path: '../public/EuclidCircularA-Medium-WebXL.woff',
+      weight: '700',
+      style: 'italic',
+    },
+    {
+      path: '../public/EuclidCircularA-Medium-WebXL.woff',
+      weight: '800',
+      style: 'normal',
+    },
+    {
+      path: '../public/EuclidCircularA-Medium-WebXL.woff',
+      weight: '800',
+      style: 'italic',
+    },
+  ],
+  display: 'swap',
+  variable: '--font-euclid',
 });
 
 export const metadata: Metadata = {
-  title: "Open MCP Client",
-  description: "An open source MCP client built with CopilotKit 🪁",
+  title: 'Open MCP Client',
+  description: 'An open source MCP client built with CopilotKit 🪁',
 };
 
 export default function RootLayout({
@@ -25,12 +88,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased w-screen h-screen`}
-      >
+    <html lang='en'>
+      <body className={`${Euclid.variable} antialiased`}>
         <CopilotKit
-          runtimeUrl="/api/copilotkit"
+          runtimeUrl='/api/copilotkit'
           // agent="sample_agent"
           showDevConsole={false}
         >
