@@ -101,6 +101,9 @@
 .copilotKitMessages footer {
   align-items: center;
 }
+.copilotKitMessages pre {
+  text-wrap: auto;
+}
 .copilotKitResponseButton {
   background-color: var(--primary);
   color: var(--primary-foreground);
