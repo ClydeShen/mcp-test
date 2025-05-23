@@ -1,145 +1,66 @@
-# MCP Client - Bedrock & Agents PoC
+  
 
-This project demonstrates a chat interface powered by AWS Bedrock (Claude 3 Sonnet) that delegates tasks to specialized MCP agents.
 
-**Integrated Agents:**
+### Explanation of MCP Client-Side Workflow:
 
-- **AWS Documentation Agent:** Search, read, and get recommendations for AWS docs.
-- **PowerPoint Agent:** Create, open, modify, and save PowerPoint (.pptx) files.
-- **Word Agent:** Create, read, and manipulate Microsoft Word documents.
+1.  **User Input**: The user types a message into the chat interface provided by CopilotKit UI on the Next.js frontend.
 
-## Architecture
+2.  **Frontend to Backend**: The frontend sends this prompt to the Next.js backend API endpoint (`/api/copilotkit/route.ts`).
 
-- `/app`: Next.js application (Frontend: CopilotKit UI + MUI; Backend API: Orchestrates LLM and MCP agents).
-- `mcp.config.json`: Central configuration for LLM (Bedrock) and MCP server settings.
-- MCP agents are typically run via `uvx` as defined in `mcp.config.json`.
+3.  **CopilotKit Runtime & LLM**:
 
-## Prerequisites
+    - The backend API route uses the `CopilotRuntime`. This runtime is configured with a `LangChainAdapter` that interfaces with the AWS Bedrock LLM (Claude 3 Sonnet).
+    - The `systemPrompt` (from `mcp.config.json`) and the defined agent actions (e.g., `awsDocumentationActions`, `wordAgentActions`) are provided to the LLM. The system prompt now specifically guides the LLM to use the Word agent for `SnowflakeAI.docx` when AI-related questions are asked.
 
-- **Node.js:** v18+
-- **pnpm:** Node.js package manager.
-- **uv:** Python package utility (for `uvx`). Install via `pip install uv`.
-- **AWS Account & Credentials:** For Bedrock access. Configure via environment variables, shared credential file, or IAM role (preferred over hardcoding in `mcp.config.json`).
+4.  **LLM Decides on Tool Use**:
 
-## Setup
+    - The LLM processes the input prompt and the available tools (actions). Based on the prompt and its understanding of the tool descriptions (and the guidance from the system prompt), it decides if a tool/action is needed.
+    - If a tool is chosen, the LLM responds with the intent to call that tool and the required parameters.
 
-1.  **Clone Repository:**
+5.  **Action Execution (MCP Interaction)**:
 
-    ```bash
-    git clone <repository_url>
-    cd open-mcp-client-main
-    ```
+    - The `CopilotRuntime` receives the LLM's decision to use a tool.
+    - The `handler` function associated with the chosen action (defined in files like `app/api/copilotkit/agents/wordAgent.ts`) is executed.
+    - Inside these handlers, a utility function (previously `callMcpTool`, though the `README.md` example shows it more directly) would be responsible for making a request to the relevant MCP server (e.g., `word-document-server`).
+    - **MCP Server Invocation**: The MCP servers are separate processes, typically started by `uvx` as defined in `mcp.config.json`. The backend API (acting as an MCP client) communicates with these MCP servers (e.g., over standard I/O if `uvx` is used directly, or potentially over HTTP if the MCP server exposes an HTTP interface).
+    - The MCP server performs the requested operation (e.g., reading a Word file, searching AWS docs) and sends the result back to the action handler in the Next.js backend.
 
-2.  **Install Node.js Dependencies:**
+6.  **Result to LLM**: The action handler returns the result from the MCP server (usually as a JSON string) back to the `CopilotRuntime`, which then sends it to the LLM.
 
-    ```bash
-    pnpm install
-    ```
+7.  **Final Response Generation**: The LLM uses the tool's output to formulate a final response to the user's original query.
 
-3.  **Configure `mcp.config.json`:**
-    Create `mcp.config.json` at the project root (can copy from `mcp.config.example.json` if provided). Key settings:
-    - `systemPrompt`: Describes available tools to the LLM.
-    - `llm`: Bedrock model ID, region, and optionally credentials (not recommended).
-    - `mcpServers`: Defines each MCP agent, its command (e.g., `uvx`), arguments, and environment variables. Example:
-      ```json
-      "mcpServers": {
-        "agent-name": {
-          "command": "uvx",
-          "args": ["--from", "published-package-name", "executable_name"],
-          "env": { "FASTMCP_LOG_LEVEL": "INFO" }
-        }
-        // ... other agents
-      }
-      ```
-      Ensure AWS region is correct and `uvx` package/executable names are accurate.
+8.  **Backend to Frontend**: This final response is streamed back from the Next.js backend to the frontend UI.
 
-## Running the Application
+9.  **Display to User**: The frontend displays the LLM's response to the user.
 
-1.  **Start Development Server:**
+This loop (User -> Backend -> LLM -> Backend (tool) -> MCP -> Backend (tool result) -> LLM -> Backend -> User) can continue if the LLM decides to use multiple tools or requires further interaction.
 
-    ```bash
-    pnpm run dev
-    ```
+## Abstracted Workflow Diagram
 
-    The Next.js app and MCP servers (launched on demand) will start.
+The following diagram shows the high-level flow of a user prompt through the system, abstracting away implementation details:
 
-2.  **Open in Browser:** [http://localhost:3000](http://localhost:3000)
+```mermaid
+sequenceDiagram
+    participant User
+    participant Client
+    participant Backend API
+    participant LLM (AWS Bedrock - Claude 3)
+    participant MCP
+    participant MCP Server
+    participant Resource Data
 
-**Example Prompts:**
-
-- "Search AWS docs for EC2 instance types"
-- "Create a new PowerPoint presentation"
-- "Create a Word document named report.docx and add a title 'Q3 Report'"
-
-## Troubleshooting
-
-- **AWS Credentials:** Verify configuration, region, and Bedrock access.
-- **MCP Agent Connection:** Check console for errors. Confirm `command` and `args` in `mcp.config.json` (especially `uvx` names, add `.exe` on Windows if needed). Ensure `uvx` is in PATH.
-- **`uvx` Issues:** Try `uvx` command directly. Clear `uv` cache: `uv cache clean`.
-
-## Adding a New MCP Agent
-
-1.  **Update `mcp.config.json`:**
-
-    - Add a new entry to `mcpServers` for your agent (typically using `uvx`).
-    - Update `systemPrompt` to inform the LLM of the new agent's capabilities.
-
-    ```jsonc
-    // Example for a new 'my-new-agent'
-    "mcpServers": {
-      // ... existing agents ...
-      "my-new-agent": {
-        "command": "uvx",
-        "args": ["--from", "my-published-package", "my_agent_executable"],
-        "env": {}
-      }
-    }
-    ```
-
-2.  **Define Agent Actions (`app/api/copilotkit/agents/newAgent.ts`):**
-    Create a `newAgent.ts` file. Import `CopilotAction` and `callMcpTool`. Define and export an array of actions for the agent.
-
-    ```typescript
-    // app/api/copilotkit/agents/newAgent.ts
-    import { type AgentAction } from '../types';
-    import { callMcpTool } from '../utils/mcpInteractionService';
-
-    // Define arg interfaces for each action
-    interface MyToolArgs {
-      /* ... */
-    }
-
-    export const newAgentActions: AgentAction[] = [
-      {
-        name: 'NewAgent_my_tool',
-        description: 'Description of my tool.',
-        parameters: [
-          /* tool parameters */
-        ],
-        handler: async (args: MyToolArgs) =>
-          callMcpTool('my-new-agent', 'actual_tool_name_on_server', args),
-      },
-      // ... other actions for this agent
-    ];
-    ```
-
-3.  **Integrate in API Route (`app/api/copilotkit/route.ts`):**
-    Import and add your `newAgentActions` to the `allActions` array.
-
-    ```typescript
-    // app/api/copilotkit/route.ts
-    // ... other imports ...
-    import { newAgentActions } from './agents/newAgent'; // <-- Import
-
-    const allActions: any[] = [
-      // ... existing actions ...
-      ...newAgentActions, // <-- Add
-    ];
-    // ...
-    ```
-
-4.  **Dependencies:** Ensure `uvx` can find and run the new agent. If it requires local files/setup not handled by `uvx`, adjust prerequisites and setup steps accordingly.
-
-## License
-
-Distributed under the MIT License. See `LICENSE` file for more information.
+    User->>Client: Enter prompt
+    Client->>Backend API: Send prompt
+    Backend API->>LLM (AWS Bedrock - Claude 3): Forward prompt + available tools
+    LLM (AWS Bedrock - Claude 3)->>Backend API: Decide to use a tool (action)
+    Backend API->>MCP: Invoke tool/action
+    MCP->>MCP Server: Forward request
+    MCP Server->>Resource Data: Access or process data (e.g., docs, files)
+    Resource Data-->>MCP Server: Return data/result
+    MCP Server-->>MCP: Return result
+    MCP-->>Backend API: Return result
+    Backend API->>LLM (AWS Bedrock - Claude 3): Provide tool result
+    LLM (AWS Bedrock - Claude 3)->>Backend API: Generate response
+    Backend API->>Client: Stream response
+    Client->>User: Display response
+```
